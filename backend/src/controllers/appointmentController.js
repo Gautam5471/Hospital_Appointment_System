@@ -58,12 +58,16 @@ const createAppointment = async (req, res) => {
       });
     }
 
-    const appointment = await Appointment.create({
+    const newAppointment = await Appointment.create({
       patient,
       doctor,
       appointmentDate: date,
       reason: reason.trim(),
     });
+
+    const appointment = await Appointment.findById(newAppointment._id)
+      .populate("patient", "firstName lastName name email phone")
+      .populate("doctor", "firstName lastName name specialization consultationFee");
 
     return res.status(201).json({
       success: true,
@@ -88,8 +92,8 @@ const createAppointment = async (req, res) => {
 const getAppointments = async (req, res) => {
   try {
     const appointments = await Appointment.find()
-      .populate("patient", "name email phone")
-      .populate("doctor", "name specialization")
+      .populate("patient", "firstName lastName name email phone")
+      .populate("doctor", "firstName lastName name specialization consultationFee")
       .sort({ appointmentDate: 1 });
 
     return res.status(200).json({
@@ -117,8 +121,8 @@ const getAppointmentById = async (req, res) => {
     }
 
     const appointment = await Appointment.findById(id)
-      .populate("patient", "name email phone")
-      .populate("doctor", "name specialization");
+      .populate("patient", "firstName lastName name email phone")
+      .populate("doctor", "firstName lastName name specialization consultationFee");
 
     if (!appointment) {
       return res.status(404).json({
@@ -245,8 +249,8 @@ const updateAppointment = async (req, res) => {
       updates,
       { new: true, runValidators: true }
     )
-      .populate("patient", "name email phone")
-      .populate("doctor", "name specialization");
+      .populate("patient", "firstName lastName name email phone")
+      .populate("doctor", "firstName lastName name specialization consultationFee");
 
     if (!appointment) {
       return res.status(404).json({
@@ -261,13 +265,19 @@ const updateAppointment = async (req, res) => {
       data: appointment,
     });
   } catch (error) {
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
     return res.status(500).json({
       success: false,
       message: "Failed to update appointment",
     });
   }
 };
-
 
 const cancelAppointment = async (req, res) => {
   try {
@@ -306,10 +316,14 @@ const cancelAppointment = async (req, res) => {
     appointment.status = "Cancelled";
     await appointment.save();
 
+    const populatedAppointment = await Appointment.findById(appointment._id)
+      .populate("patient", "firstName lastName name email phone")
+      .populate("doctor", "firstName lastName name specialization consultationFee");
+
     return res.status(200).json({
       success: true,
       message: "Appointment cancelled successfully",
-      data: appointment,
+      data: populatedAppointment,
     });
   } catch (error) {
     return res.status(500).json({
