@@ -1,22 +1,17 @@
-
 const mongoose = require("mongoose");
 
 const patientSchema = new mongoose.Schema(
   {
-
-    firstName :{
-        type : String,
-        trim : true,
+    firstName: {
+      type: String,
+      required: true,
+      trim: true,
     },
 
     lastName: {
-        type : String,
-        trim : true,
-    },
-
-    password :{
-        type : String,
-        select : false,
+      type: String,
+      required: true,
+      trim: true,
     },
 
     email: {
@@ -27,6 +22,10 @@ const patientSchema = new mongoose.Schema(
       trim: true,
     },
 
+    password: {
+      type: String,
+      select: false,
+    },
 
     phone: {
       type: String,
@@ -36,13 +35,11 @@ const patientSchema = new mongoose.Schema(
 
     dateOfBirth: {
       type: Date,
-      required: true,
     },
 
     gender: {
       type: String,
       enum: ["Male", "Female", "Other"],
-      required: true,
     },
 
     address: {
@@ -52,7 +49,13 @@ const patientSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
+
+patientSchema.virtual("name").get(function () {
+  return `${this.firstName || ""} ${this.lastName || ""}`.trim();
+});
 
 module.exports = mongoose.model("Patient", patientSchema);
