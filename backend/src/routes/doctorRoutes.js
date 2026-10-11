@@ -1,21 +1,34 @@
-
-const express = require("express");
+const express = require('express');
 const router = express.Router();
 
 const {
-  createDoctor,
   getDoctors,
+  getAllDoctors,
   getDoctorById,
+  createDoctor,
   updateDoctor,
   deleteDoctor,
-  updateDoctorAvailability,
-} = require("../controllers/doctorController");
+} = require('../controllers/doctorController');
 
-router.post("/", createDoctor);
-router.get("/", getDoctors);
-router.get("/:id", getDoctorById);
-router.put("/:id", updateDoctor);
-router.delete("/:id", deleteDoctor);
-router.patch("/:id/availability", updateDoctorAvailability);
+const { authMiddleware, authorizeRole } = require('../middleware/authMiddleware');
+
+// Route: /
+// GET / - Public access to view available doctors
+// POST / - Admin only to add a new doctor (401 if unauthenticated, 403 if unauthorized)
+router
+  .route('/')
+  .get(getDoctors || getAllDoctors)
+  .post(authMiddleware, authorizeRole('admin'), createDoctor);
+
+// Route: /:id
+// GET /:id - Public access to view a specific doctor profile
+// PUT /:id, PATCH /:id - Admin only to modify doctor profile (401 if unauthenticated, 403 if unauthorized)
+// DELETE /:id - Admin only to remove a doctor profile (401 if unauthenticated, 403 if unauthorized)
+router
+  .route('/:id')
+  .get(getDoctorById)
+  .put(authMiddleware, authorizeRole('admin'), updateDoctor)
+  .patch(authMiddleware, authorizeRole('admin'), updateDoctor)
+  .delete(authMiddleware, authorizeRole('admin'), deleteDoctor);
 
 module.exports = router;
