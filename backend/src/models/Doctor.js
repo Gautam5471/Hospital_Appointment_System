@@ -1,4 +1,3 @@
-
 const mongoose = require("mongoose");
 
 const doctorSchema = new mongoose.Schema(
@@ -60,7 +59,13 @@ const doctorSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
+
+doctorSchema.virtual("name").get(function () {
+  return `${this.firstName || ""} ${this.lastName || ""}`.trim();
+});
 
 module.exports = mongoose.model("Doctor", doctorSchema);
