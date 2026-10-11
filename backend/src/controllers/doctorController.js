@@ -1,10 +1,17 @@
-
 const mongoose = require("mongoose");
 const Doctor = require("../models/Doctor");
 
 const createDoctor = async (req, res) => {
   try {
-    const doctor = await Doctor.create(req.body);
+    const payload = { ...req.body };
+
+    if (payload.name && (!payload.firstName || !payload.lastName)) {
+      const parts = payload.name.trim().split(" ");
+      payload.firstName = payload.firstName || parts[0];
+      payload.lastName = payload.lastName || parts.slice(1).join(" ") || parts[0];
+    }
+
+    const doctor = await Doctor.create(payload);
 
     return res.status(201).json({
       success: true,
@@ -32,7 +39,6 @@ const createDoctor = async (req, res) => {
     });
   }
 };
-
 
 const getDoctors = async (req, res) => {
   try {
@@ -95,6 +101,8 @@ const updateDoctor = async (req, res) => {
     }
 
     const allowedFields = [
+      "firstName",
+      "lastName",
       "name",
       "email",
       "phone",
@@ -111,6 +119,13 @@ const updateDoctor = async (req, res) => {
       if (req.body[field] !== undefined) {
         updates[field] = req.body[field];
       }
+    }
+
+    if (updates.name && (!updates.firstName || !updates.lastName)) {
+      const parts = updates.name.trim().split(" ");
+      updates.firstName = updates.firstName || parts[0];
+      updates.lastName = updates.lastName || parts.slice(1).join(" ") || parts[0];
+      delete updates.name;
     }
 
     if (Object.keys(updates).length === 0) {
@@ -147,7 +162,7 @@ const updateDoctor = async (req, res) => {
 
     return res.status(400).json({
       success: false,
-      message: "Unable to update doctor",
+      message: error.message || "Unable to update doctor",
     });
   }
 };

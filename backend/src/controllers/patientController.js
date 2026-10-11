@@ -1,15 +1,24 @@
-
 const mongoose = require("mongoose");
 const Patient = require("../models/Patient");
 
 const createPatient = async (req, res) => {
   try {
-    const patient = await Patient.create(req.body);
+    const payload = { ...req.body };
+
+    if (payload.name && (!payload.firstName || !payload.lastName)) {
+      const parts = payload.name.trim().split(" ");
+      payload.firstName = payload.firstName || parts[0];
+      payload.lastName = payload.lastName || parts.slice(1).join(" ") || parts[0];
+    }
+
+    const patient = await Patient.create(payload);
+    const patientObj = patient.toObject();
+    delete patientObj.password;
 
     return res.status(201).json({
       success: true,
       message: "Patient registered successfully",
-      data: patient,
+      data: patientObj,
     });
   } catch (error) {
     if (error.code === 11000) {
@@ -35,7 +44,9 @@ const createPatient = async (req, res) => {
 
 const getPatients = async (req, res) => {
   try {
-    const patients = await Patient.find().sort({ createdAt: -1 });
+    const patients = await Patient.find()
+      .select("-password")
+      .sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,
@@ -61,7 +72,7 @@ const getPatientById = async (req, res) => {
       });
     }
 
-    const patient = await Patient.findById(id);
+    const patient = await Patient.findById(id).select("-password");
 
     if (!patient) {
       return res.status(404).json({
@@ -94,6 +105,8 @@ const updatePatient = async (req, res) => {
     }
 
     const allowedFields = [
+      "firstName",
+      "lastName",
       "name",
       "email",
       "phone",
@@ -110,6 +123,13 @@ const updatePatient = async (req, res) => {
       }
     }
 
+    if (updates.name && (!updates.firstName || !updates.lastName)) {
+      const parts = updates.name.trim().split(" ");
+      updates.firstName = updates.firstName || parts[0];
+      updates.lastName = updates.lastName || parts.slice(1).join(" ") || parts[0];
+      delete updates.name;
+    }
+
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({
         success: false,
@@ -120,7 +140,7 @@ const updatePatient = async (req, res) => {
     const patient = await Patient.findByIdAndUpdate(id, updates, {
       new: true,
       runValidators: true,
-    });
+    }).select("-password");
 
     if (!patient) {
       return res.status(404).json({
@@ -144,7 +164,7 @@ const updatePatient = async (req, res) => {
 
     return res.status(400).json({
       success: false,
-      message: "Unable to update patient",
+      message: error.message || "Unable to update patient",
     });
   }
 };
