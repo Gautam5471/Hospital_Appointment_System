@@ -5,8 +5,13 @@ const errorHandler = require('./middleware/errorMiddleware');
 
 const app = express();
 
-// Database connect server start hone se pehle ya start par
+// Database connect
 connectDB();
+
+// Body parser
+app.use(express.json());
+
+// Global error handler
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
