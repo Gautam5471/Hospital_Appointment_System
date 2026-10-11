@@ -25,6 +25,11 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/patients', patientRoutes);
 
+// Health check route
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Hospital Appointment System API is running' });
+});
+
 // Global Error Handling Middleware (must be after all routes)
 app.use(errorHandler);
 
